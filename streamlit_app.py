@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.figure_factory as ff
 import requests
 import datetime
-import ast
+import logging
 
 def zip_to_gps(zipcode):
     nomi = pgeocode.Nominatim('us')
@@ -80,7 +80,7 @@ else:
     try:
         df, weather_gps = get_data(lat,lon,from_year,to_year)
     except KeyError:
-        print(f'No weather data for this {zip_code}.')
+        logging.exception(f'No weather data for this {zip_code=}.')
         st.error('No weather data for this zip.')
         exception = True
     if exception == False:
