@@ -76,24 +76,29 @@ else:
         min_value=-60,
         max_value=45,
         value=[32, 45])
+    exception = False
+    try:
+        df, weather_gps = get_data(lat,lon,from_year,to_year)
+    except KeyError:
+        print(f'No weather data for this {zip_code}.')
+        st.error('No weather data for this zip.')
+        exception = True
+    if exception == False:
+        df['count'] = (df['temperature_2m'] <= chill_max) & (df['temperature_2m'] >= chill_min)
+        df['chill_hours'] = df.groupby('year')['count'].cumsum()
+        df['day_cnt'] = df.groupby('year').cumcount()
+        df['date'] = df['time'].dt.strftime('%B-%d')
+        df['max_chill_hours'] = df['year'].map(df.groupby('year')['chill_hours'].max().to_dict())
 
+        # drop zero values
+        df = df[df['chill_hours']>0]
 
-    df, weather_gps = get_data(lat,lon,from_year,to_year)
-    df['count'] = (df['temperature_2m'] <= chill_max) & (df['temperature_2m'] >= chill_min)
-    df['chill_hours'] = df.groupby('year')['count'].cumsum()
-    df['day_cnt'] = df.groupby('year').cumcount()
-    df['date'] = df['time'].dt.strftime('%B-%d')
-    df['max_chill_hours'] = df['year'].map(df.groupby('year')['chill_hours'].max().to_dict())
-
-    # drop zero values
-    df = df[df['chill_hours']>0]
-
-    # drop max values
-    df = df[df['chill_hours'] != df['max_chill_hours']]
-    ''
-    st.header('Chill hours', divider='gray')
-    fig = px.line(df, x='date', y='chill_hours', color='year', category_orders={'date':df.sort_values('day_cnt')['date']})
-    st.plotly_chart(fig)
+        # drop max values
+        df = df[df['chill_hours'] != df['max_chill_hours']]
+        ''
+        st.header('Chill hours', divider='gray')
+        fig = px.line(df, x='date', y='chill_hours', color='year', category_orders={'date':df.sort_values('day_cnt')['date']})
+        st.plotly_chart(fig)
 
 
 ''
