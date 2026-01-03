@@ -9,8 +9,9 @@ import requests
 import datetime
 import logging
 
+
 def zip_to_gps(zipcode):
-    nomi = pgeocode.Nominatim('us')
+    nomi = pgeocode.Nominatim("us")
     location = nomi.query_postal_code(zipcode)
     return float(location.latitude), float(location.longitude)
 
@@ -23,19 +24,21 @@ st.set_page_config(
 # -----------------------------------------------------------------------------
 # Declare some useful functions.
 
+
 @st.cache_data
-def get_data(lat,lon,from_year,to_year):
-    start_date = f'{from_year}-07-01'
-    end_date = f'{to_year}-06-01'
+def get_data(lat, lon, from_year, to_year):
+    start_date = f"{from_year}-07-01"
+    end_date = f"{to_year}-06-01"
     if datetime.datetime.strptime(end_date, "%Y-%m-%d") > datetime.datetime.now():
         # use yesterday's date
         end_date = datetime.datetime.now().date() - datetime.timedelta(days=1)
-    url = f'https://archive-api.open-meteo.com/v1/era5?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=temperature_2m&temperature_unit=fahrenheit'
+    url = f"https://archive-api.open-meteo.com/v1/era5?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=temperature_2m&temperature_unit=fahrenheit"
     response = requests.get(url).json()
-    df = pd.DataFrame(response['hourly'])
-    df['time'] = pd.to_datetime(df['time'])
-    df['year'] = (df['time'] + pd.DateOffset(months=6)).dt.year
-    return df, (response['latitude'], response['longitude'])
+    df = pd.DataFrame(response["hourly"])
+    df["time"] = pd.to_datetime(df["time"])
+    df["year"] = (df["time"] + pd.DateOffset(months=6)).dt.year
+    return df, (response["latitude"], response["longitude"])
+
 
 # -----------------------------------------------------------------------------
 # Draw the actual page
