@@ -15,11 +15,6 @@ def zip_to_gps(zipcode):
     location = nomi.query_postal_code(zipcode)
     return float(location.latitude), float(location.longitude)
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='Chill hours by zip',
-    page_icon=':snowflake:', # This is an emoji shortcode. Could be a URL too.
-)
 
 # -----------------------------------------------------------------------------
 # Declare some useful functions.
@@ -42,68 +37,89 @@ def get_data(lat, lon, from_year, to_year):
 
 # -----------------------------------------------------------------------------
 # Draw the actual page
+if __name__ == "__main__":
+    # Set the title and favicon that appear in the Browser's tab bar.
+    st.set_page_config(
+        page_title="Chill hours by zip",
+        page_icon=":snowflake:",  # This is an emoji shortcode. Could be a URL too.
+    )
 
-st.markdown("""Are you trying to find what are the typical chill hours for you specific location? 
-I couldn't find any nifty web app that would show me the current or historical chill hours so I made one!
-Just enter your ZIP and see for yourself.""") 
+    st.markdown(
+        """Are you trying to find what are the typical chill hours for you specific location? 
+    I couldn't find any nifty web app that would show me the current or historical chill hours so I made one!
+    Just enter your ZIP and see for yourself."""
+    )
 
-# Add some spacing
-''
-''
+    # Add some spacing
+    ""
+    ""
 
-time_now = datetime.datetime.now()
+    time_now = datetime.datetime.now()
 
-max_value = time_now.year+1
+    max_value = time_now.year + 1
 
-col1, col2 = st.columns([0.2,0.8], gap='medium')
-with col1:
-    zip_code = st.text_input('zip code', help='5 digit zip code', type="default")
+    col1, col2 = st.columns([0.2, 0.8], gap="medium")
+    with col1:
+        zip_code = st.text_input("zip code", help="5 digit zip code", type="default")
 
-with col2:
-    from_year, to_year = st.slider(
-        'Which years are you interested in?',
-        min_value=1980,
-        max_value=max_value,
-        value=[2020, max_value])
+    with col2:
+        from_year, to_year = st.slider(
+            "Which years are you interested in?",
+            min_value=1980,
+            max_value=max_value,
+            value=[2020, max_value],
+        )
 
-if (len(zip_code) != 5) or (not zip_code.isdecimal()):
-    st.error('Missing 5 digit zip code!')
+    if (len(zip_code) != 5) or (not zip_code.isdecimal()):
+        st.error("Missing 5 digit zip code!")
 
-else:
-    lat, lon = zip_to_gps(zip_code)
+    else:
+        lat, lon = zip_to_gps(zip_code)
 
-    ''
-    ''
-    chill_min, chill_max = st.slider(
-        'Chill temperature range [fahrenheit]',
-        min_value=-60,
-        max_value=45,
-        value=[32, 45])
-    exception = False
-    try:
-        df, weather_gps = get_data(lat,lon,from_year,to_year)
-    except KeyError:
-        logging.exception(f'No weather data for this {zip_code=}.')
-        st.error('No weather data for this zip.')
-        exception = True
-    if exception == False:
-        df['count'] = (df['temperature_2m'] <= chill_max) & (df['temperature_2m'] >= chill_min)
-        df['chill_hours'] = df.groupby('year')['count'].cumsum()
-        df['day_cnt'] = df.groupby('year').cumcount()
-        df['date'] = df['time'].dt.strftime('%B-%d')
-        df['max_chill_hours'] = df['year'].map(df.groupby('year')['chill_hours'].max().to_dict())
+        ""
+        ""
+        chill_min, chill_max = st.slider(
+            "Chill temperature range [fahrenheit]",
+            min_value=-60,
+            max_value=45,
+            value=[32, 45],
+        )
+        exception = False
+        try:
+            df, weather_gps = get_data(lat, lon, from_year, to_year)
+        except KeyError:
+            logging.exception(f"No weather data for this {zip_code=}.")
+            st.error("No weather data for this zip.")
+            exception = True
+        if exception == False:
+            df["count"] = (df["temperature_2m"] <= chill_max) & (
+                df["temperature_2m"] >= chill_min
+            )
+            df["chill_hours"] = df.groupby("year")["count"].cumsum()
+            df["day_cnt"] = df.groupby("year").cumcount()
+            df["date"] = df["time"].dt.strftime("%B-%d")
+            df["max_chill_hours"] = df["year"].map(
+                df.groupby("year")["chill_hours"].max().to_dict()
+            )
 
-        # drop zero values
-        df = df[df['chill_hours']>0]
+            # drop zero values
+            df = df[df["chill_hours"] > 0]
 
-        # drop max values
-        df = df[df['chill_hours'] != df['max_chill_hours']]
-        ''
-        st.header('Chill hours', divider='gray')
-        fig = px.line(df, x='date', y='chill_hours', color='year', category_orders={'date':df.sort_values('day_cnt')['date']})
-        st.plotly_chart(fig)
+            # drop max values
+            df = df[df["chill_hours"] != df["max_chill_hours"]]
+            ""
+            st.header("Chill hours", divider="gray")
+            fig = px.line(
+                df,
+                x="date",
+                y="chill_hours",
+                color="year",
+                category_orders={"date": df.sort_values("day_cnt")["date"]},
+            )
+            st.plotly_chart(fig)
 
+    ""
 
-''
-
-st.markdown("""This app wouldn't be possible without the historical weather data from https://open-meteo.com/""") 
+    st.markdown(
+        """This app wouldn't be possible without the historical weather data from https://open-meteo.com/"""
+    )
